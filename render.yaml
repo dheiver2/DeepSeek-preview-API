@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: deepseek-api
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: HUGGINGFACE_API_KEY
+        sync: false
+      - key: CORS_ORIGIN
+        value: https://seu-frontend.vercel.app
+    healthCheckPath: /health
