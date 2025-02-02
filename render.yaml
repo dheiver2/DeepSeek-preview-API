@@ -6,10 +6,10 @@ services:
     buildCommand: npm install
     startCommand: node server.js
     envVars:
+      - key: PORT
+        value: 3000
       - key: NODE_ENV
         value: production
       - key: HUGGINGFACE_API_KEY
         sync: false
-      - key: CORS_ORIGIN
-        value: https://seu-frontend.vercel.app
     healthCheckPath: /health
