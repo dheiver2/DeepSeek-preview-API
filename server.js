@@ -14,11 +14,7 @@ const limiter = rateLimit({
 });
 
 // Middleware
-app.use(cors({
-    origin: process.env.CORS_ORIGIN || '*',
-    methods: ['GET', 'POST'],
-    allowedHeaders: ['Content-Type']
-}));
+app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 app.use(limiter);
 
@@ -38,12 +34,20 @@ app.post('/api/chat', async (req, res) => {
     try {
         const { message, image_url } = req.body;
         
+        // Message validation
         if (!message || typeof message !== 'string') {
             return res.status(400).json({
                 error: 'Message is required and must be a string',
                 timestamp: new Date().toISOString()
             });
         }
+
+        // Log request for debugging
+        console.log('Received request:', {
+            message,
+            image_url,
+            timestamp: new Date().toISOString()
+        });
 
         const generated = await hf.textGeneration({
             model: "deepseek-ai/deepseek-coder-33b-instruct",
@@ -82,31 +86,13 @@ app.post('/api/chat', async (req, res) => {
     }
 });
 
-// Handle all other routes
-app.all('*', (req, res) => {
-    res.status(404).json({
-        error: 'Route not found',
-        timestamp: new Date().toISOString()
-    });
+// Define porta para o Render
+const PORT = process.env.PORT || 3000;
+
+// Log para debug
+console.log('Starting server with PORT:', PORT);
+
+// Inicializa o servidor
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Server is running on port ${PORT} - ${new Date().toISOString()}`);
 });
-
-// Error handling
-app.use((err, req, res, next) => {
-    console.error('Global error handler:', err);
-    res.status(500).json({
-        error: 'Something went wrong!',
-        details: err.message,
-        timestamp: new Date().toISOString()
-    });
-});
-
-// Export for serverless use
-export default app;
-
-// Start server if not in serverless environment
-if (process.env.NODE_ENV !== 'production') {
-    const PORT = process.env.PORT || 10000;
-    app.listen(PORT, () => {
-        console.log(`Server running on port ${PORT} - ${new Date().toISOString()}`);
-    });
-}
