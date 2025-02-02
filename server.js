@@ -14,7 +14,11 @@ const limiter = rateLimit({
 });
 
 // Middleware
-app.use(cors());
+app.use(cors({
+    origin: process.env.CORS_ORIGIN || '*',
+    methods: ['GET', 'POST'],
+    allowedHeaders: ['Content-Type']
+}));
 app.use(express.json({ limit: '10mb' }));
 app.use(limiter);
 
@@ -34,7 +38,6 @@ app.post('/api/chat', async (req, res) => {
     try {
         const { message, image_url } = req.body;
         
-        // Message validation
         if (!message || typeof message !== 'string') {
             return res.status(400).json({
                 error: 'Message is required and must be a string',
@@ -42,30 +45,6 @@ app.post('/api/chat', async (req, res) => {
             });
         }
 
-        // Log request for debugging
-        console.log('Received request:', {
-            message,
-            image_url,
-            timestamp: new Date().toISOString()
-        });
-
-        // Prepare message content
-        const content = [
-            {
-                type: "text",
-                text: message
-            }
-        ];
-
-        // Add image if provided and valid
-        if (image_url && typeof image_url === 'string') {
-            content.push({
-                type: "image_url",
-                image_url: { url: image_url }
-            });
-        }
-
-        // Call to Hugging Face API using DeepSeek
         const generated = await hf.textGeneration({
             model: "deepseek-ai/deepseek-coder-33b-instruct",
             inputs: message,
@@ -82,15 +61,10 @@ app.post('/api/chat', async (req, res) => {
             }
         });
 
-        // Log response for debugging
-        console.log('HF Response:', generated);
-
-        // Verify response contains generated text
         if (!generated || !generated.generated_text) {
             throw new Error('No response generated from the model');
         }
 
-        // Return structured response
         res.json({
             response: {
                 message: generated.generated_text,
@@ -99,19 +73,8 @@ app.post('/api/chat', async (req, res) => {
             }
         });
     } catch (error) {
-        // Log detailed error
-        console.error('Error details:', {
-            name: error.name,
-            message: error.message,
-            stack: error.stack,
-            timestamp: new Date().toISOString()
-        });
-
-        // Determine status code
-        const statusCode = error.name === 'ValidationError' ? 400 : 500;
-
-        // Return structured error
-        res.status(statusCode).json({
+        console.error('Error details:', error);
+        res.status(500).json({
             error: 'Error processing request',
             details: error.message,
             timestamp: new Date().toISOString()
@@ -119,13 +82,17 @@ app.post('/api/chat', async (req, res) => {
     }
 });
 
-// Error handling for uncaught errors
-app.use((err, req, res, next) => {
-    console.error('Global error handler:', {
-        error: err.stack,
+// Handle all other routes
+app.all('*', (req, res) => {
+    res.status(404).json({
+        error: 'Route not found',
         timestamp: new Date().toISOString()
     });
-    
+});
+
+// Error handling
+app.use((err, req, res, next) => {
+    console.error('Global error handler:', err);
     res.status(500).json({
         error: 'Something went wrong!',
         details: err.message,
@@ -133,8 +100,13 @@ app.use((err, req, res, next) => {
     });
 });
 
-// Server initialization
-const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT} - ${new Date().toISOString()}`);
-});
+// Export for serverless use
+export default app;
+
+// Start server if not in serverless environment
+if (process.env.NODE_ENV !== 'production') {
+    const PORT = process.env.PORT || 10000;
+    app.listen(PORT, () => {
+        console.log(`Server running on port ${PORT} - ${new Date().toISOString()}`);
+    });
+}
