@@ -65,20 +65,20 @@ app.post('/api/chat', async (req, res) => {
             });
         }
 
-        // Call to Hugging Face API using latest DeepSeek model
+        // Call to Hugging Face API using DeepSeek
         const generated = await hf.textGeneration({
-            model: "deepseek-ai/deepseek-coder-33b-instruct",  // Updated to latest DeepSeek model
+            model: "deepseek-ai/deepseek-coder-33b-instruct",
             inputs: message,
             parameters: {
-                max_new_tokens: 1000,        // Increased token limit
+                max_new_tokens: 1000,
                 temperature: 0.7,
                 return_full_text: false,
                 do_sample: true,
                 top_p: 0.95,
                 top_k: 50,
-                repetition_penalty: 1.1,    // Added to improve response quality
-                length_penalty: 1.0,        // Added to balance response length
-                stop: ["</s>", "Human:", "Assistant:"]  // Added stop tokens
+                repetition_penalty: 1.1,
+                length_penalty: 1.0,
+                stop: ["</s>", "Human:", "Assistant:"]
             }
         });
 
@@ -99,7 +99,7 @@ app.post('/api/chat', async (req, res) => {
             }
         });
     } catch (error) {
-        // Detailed error logging
+        // Log detailed error
         console.error('Error details:', {
             name: error.name,
             message: error.message,
@@ -107,7 +107,7 @@ app.post('/api/chat', async (req, res) => {
             timestamp: new Date().toISOString()
         });
 
-        // Determine appropriate status code
+        // Determine status code
         const statusCode = error.name === 'ValidationError' ? 400 : 500;
 
         // Return structured error
