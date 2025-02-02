@@ -65,17 +65,20 @@ app.post('/api/chat', async (req, res) => {
             });
         }
 
-        // Call to Hugging Face API using DeepSeek
+        // Call to Hugging Face API using latest DeepSeek model
         const generated = await hf.textGeneration({
-            model: "deepseek-ai/deepseek-coder-1.3b-instruct",  // Updated to DeepSeek model
+            model: "deepseek-ai/deepseek-coder-33b-instruct",  // Updated to latest DeepSeek model
             inputs: message,
             parameters: {
-                max_new_tokens: 500,
+                max_new_tokens: 1000,        // Increased token limit
                 temperature: 0.7,
                 return_full_text: false,
                 do_sample: true,
-                top_p: 0.95,  // Added parameter for DeepSeek
-                top_k: 50     // Added parameter for DeepSeek
+                top_p: 0.95,
+                top_k: 50,
+                repetition_penalty: 1.1,    // Added to improve response quality
+                length_penalty: 1.0,        // Added to balance response length
+                stop: ["</s>", "Human:", "Assistant:"]  // Added stop tokens
             }
         });
 
@@ -91,7 +94,7 @@ app.post('/api/chat', async (req, res) => {
         res.json({
             response: {
                 message: generated.generated_text,
-                model: "deepseek-ai/deepseek-coder-1.3b-instruct",
+                model: "deepseek-ai/deepseek-coder-33b-instruct",
                 timestamp: new Date().toISOString()
             }
         });
